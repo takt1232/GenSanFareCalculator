@@ -5,8 +5,11 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator, MapPin, DollarSign, Settings, Navigation, Square, Heart } from "lucide-react"
+import { Calculator, MapPin, DollarSign, Settings, Navigation, Square, Heart, History, Save } from "lucide-react"
 import { FareSettings } from "@/components/fare-settings"
+import { RouteMap } from "@/components/route-map"
+import { TripHistoryComponent } from "@/components/trip-history"
+import { saveTripToHistory } from "@/lib/storage"
 
 interface Coordinates {
   latitude: number
@@ -36,6 +39,7 @@ export function FareCalculator() {
   const [ratePerKm, setRatePerKm] = useState(1)
   const [currency, setCurrency] = useState("₱")
   const [showSettings, setShowSettings] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const [isTracking, setIsTracking] = useState(false)
   const [trackedDistance, setTrackedDistance] = useState(0)
@@ -129,6 +133,46 @@ export function FareCalculator() {
     coordinatesRef.current = []
   }
 
+  const saveTrip = () => {
+    if (fare === null || !distance) return
+
+    const distanceNum = Number.parseFloat(distance)
+
+    if (coordinatesRef.current.length > 0) {
+      // GPS tracked trip
+      saveTripToHistory({
+        type: "gps",
+        distance: distanceNum,
+        fare: fare,
+        currency: currency,
+        startPoint: {
+          latitude: coordinatesRef.current[0].latitude,
+          longitude: coordinatesRef.current[0].longitude,
+        },
+        endPoint: {
+          latitude: coordinatesRef.current[coordinatesRef.current.length - 1].latitude,
+          longitude: coordinatesRef.current[coordinatesRef.current.length - 1].longitude,
+        },
+        route: coordinatesRef.current.map((coord) => ({
+          latitude: coord.latitude,
+          longitude: coord.longitude,
+          timestamp: coord.timestamp,
+        })),
+      })
+    } else {
+      // Manual entry
+      saveTripToHistory({
+        type: "manual",
+        distance: distanceNum,
+        fare: fare,
+        currency: currency,
+      })
+    }
+
+    // Show success feedback
+    alert("Trip saved to history!")
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -138,17 +182,24 @@ export function FareCalculator() {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Calculator className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">GensanFareCalculator</h1>
+            <h1 className="text-xl font-bold text-foreground">GenSanFareCalculator</h1>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="rounded-full">
-            <Settings className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-full">
+              <History className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="rounded-full">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
-        {showSettings ? (
+        {showHistory ? (
+          <TripHistoryComponent onClose={() => setShowHistory(false)} />
+        ) : showSettings ? (
           <FareSettings
             baseFare={baseFare}
             baseDistance={baseDistance}
@@ -176,6 +227,13 @@ export function FareCalculator() {
                 </div>
               </div>
             </Card>
+
+            {/* Map Visualization */}
+            {(isTracking || coordinatesRef.current.length > 0) && (
+              <Card className="p-0 overflow-hidden">
+                <RouteMap coordinates={coordinatesRef.current} isTracking={isTracking} />
+              </Card>
+            )}
 
             <Card className="p-6">
               <div className="space-y-4">
@@ -293,6 +351,16 @@ export function FareCalculator() {
                         ? `Base fare for first ${baseDistance} km: ${currency}${baseFare.toFixed(2)}`
                         : `Base fare: ${currency}${baseFare.toFixed(2)} + ${(Number.parseFloat(distance) - baseDistance).toFixed(2)} km × ${currency}${ratePerKm.toFixed(2)}/km`}
                     </p>
+                  </div>
+                  <div className="pt-4">
+                    <Button
+                      onClick={saveTrip}
+                      variant="secondary"
+                      className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Trip to History
+                    </Button>
                   </div>
                 </div>
               </Card>

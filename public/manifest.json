@@ -1,6 +1,6 @@
 {
-  "name": "GensanFareCalculator - Commute Fare Calculator",
-  "short_name": "GensanFareCalc",
+  "name": "GenSanFareCalculator - Commute Fare Calculator",
+  "short_name": "GenSanFareCalc",
   "description": "Calculate your commute fare based on distance traveled in General Santos City",
   "start_url": "/",
   "display": "standalone",

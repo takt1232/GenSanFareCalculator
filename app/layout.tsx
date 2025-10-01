@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "GensanFareCalculator - Commute Fare Calculator",
+  title: "GenSanFareCalculator - Commute Fare Calculator",
   description: "Calculate your commute fare based on distance traveled in General Santos City",
   generator: "v0.app",
   manifest: "/manifest.json",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "GensanFareCalculator",
+    title: "GenSanFareCalculator",
   },
 }
 
