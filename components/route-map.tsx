@@ -39,13 +39,8 @@ export function RouteMap({ coordinates, isTracking }: RouteMapProps) {
 
         mapInstanceRef.current = map
 
-        // Add custom CSS for Leaflet
         const style = document.createElement("style")
         style.textContent = `
-          .leaflet-container {
-            height: 100%;
-            width: 100%;
-          }
           .leaflet-control-attribution {
             font-size: 10px;
           }
@@ -142,8 +137,8 @@ export function RouteMap({ coordinates, isTracking }: RouteMapProps) {
   }, [coordinates, isTracking])
 
   return (
-    <div className="relative">
-      <div ref={mapRef} className="w-full h-[300px] rounded-lg" />
+    <div className="relative h-[300px] overflow-hidden">
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
       {coordinates.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
           <div className="text-center">
