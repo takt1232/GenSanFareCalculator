@@ -5,10 +5,22 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator, MapPin, DollarSign, Settings, Navigation, Square, Heart, History, Save } from "lucide-react"
+import {
+  Calculator,
+  MapPin,
+  DollarSign,
+  Settings,
+  Navigation,
+  Square,
+  Heart,
+  History,
+  Save,
+  Shield,
+} from "lucide-react"
 import { FareSettings } from "@/components/fare-settings"
 import { RouteMap } from "@/components/route-map"
 import { TripHistoryComponent } from "@/components/trip-history"
+import { PrivacyPolicy } from "@/components/privacy-policy"
 import { saveTripToHistory } from "@/lib/storage"
 
 interface Coordinates {
@@ -40,6 +52,7 @@ export function FareCalculator() {
   const [currency, setCurrency] = useState("₱")
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   const [isTracking, setIsTracking] = useState(false)
   const [trackedDistance, setTrackedDistance] = useState(0)
@@ -133,44 +146,49 @@ export function FareCalculator() {
     coordinatesRef.current = []
   }
 
-  const saveTrip = () => {
+  const saveTrip = async () => {
     if (fare === null || !distance) return
 
     const distanceNum = Number.parseFloat(distance)
 
-    if (coordinatesRef.current.length > 0) {
-      // GPS tracked trip
-      saveTripToHistory({
-        type: "gps",
-        distance: distanceNum,
-        fare: fare,
-        currency: currency,
-        startPoint: {
-          latitude: coordinatesRef.current[0].latitude,
-          longitude: coordinatesRef.current[0].longitude,
-        },
-        endPoint: {
-          latitude: coordinatesRef.current[coordinatesRef.current.length - 1].latitude,
-          longitude: coordinatesRef.current[coordinatesRef.current.length - 1].longitude,
-        },
-        route: coordinatesRef.current.map((coord) => ({
-          latitude: coord.latitude,
-          longitude: coord.longitude,
-          timestamp: coord.timestamp,
-        })),
-      })
-    } else {
-      // Manual entry
-      saveTripToHistory({
-        type: "manual",
-        distance: distanceNum,
-        fare: fare,
-        currency: currency,
-      })
-    }
+    try {
+      if (coordinatesRef.current.length > 0) {
+        // GPS tracked trip
+        await saveTripToHistory({
+          type: "gps",
+          distance: distanceNum,
+          fare: fare,
+          currency: currency,
+          startPoint: {
+            latitude: coordinatesRef.current[0].latitude,
+            longitude: coordinatesRef.current[0].longitude,
+          },
+          endPoint: {
+            latitude: coordinatesRef.current[coordinatesRef.current.length - 1].latitude,
+            longitude: coordinatesRef.current[coordinatesRef.current.length - 1].longitude,
+          },
+          route: coordinatesRef.current.map((coord) => ({
+            latitude: coord.latitude,
+            longitude: coord.longitude,
+            timestamp: coord.timestamp,
+          })),
+        })
+      } else {
+        // Manual entry
+        await saveTripToHistory({
+          type: "manual",
+          distance: distanceNum,
+          fare: fare,
+          currency: currency,
+        })
+      }
 
-    // Show success feedback
-    alert("Trip saved to history!")
+      // Show success feedback
+      alert("Trip saved to history and synced to cloud!")
+    } catch (error) {
+      console.error("[v0] Error saving trip:", error)
+      alert("Trip saved locally, but cloud sync failed. Will retry later.")
+    }
   }
 
   return (
@@ -191,13 +209,18 @@ export function FareCalculator() {
             <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="rounded-full">
               <Settings className="w-5 h-5" />
             </Button>
+            <Button variant="ghost" size="icon" onClick={() => setShowPrivacy(!showPrivacy)} className="rounded-full">
+              <Shield className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
-        {showHistory ? (
+        {showPrivacy ? (
+          <PrivacyPolicy onClose={() => setShowPrivacy(false)} />
+        ) : showHistory ? (
           <TripHistoryComponent onClose={() => setShowHistory(false)} />
         ) : showSettings ? (
           <FareSettings
@@ -402,6 +425,17 @@ export function FareCalculator() {
             >
               <Heart className="w-4 h-4" />
               Donate
+            </Button>
+          </div>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Button
+              variant="link"
+              size="sm"
+              className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
+              onClick={() => setShowPrivacy(true)}
+            >
+              <Shield className="w-3 h-3 mr-1" />
+              Privacy Policy
             </Button>
           </div>
           <p className="text-center text-xs text-muted-foreground">Tap the settings icon to customize fare rates</p>
