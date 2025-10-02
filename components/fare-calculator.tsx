@@ -16,11 +16,13 @@ import {
   History,
   Save,
   Shield,
+  FileText,
 } from "lucide-react"
 import { FareSettings } from "@/components/fare-settings"
 import { RouteMap } from "@/components/route-map"
 import { TripHistoryComponent } from "@/components/trip-history"
 import { PrivacyPolicy } from "@/components/privacy-policy"
+import { PatchNotes } from "@/components/patch-notes" // Added PatchNotes import
 import { saveTripToHistory } from "@/lib/storage"
 
 interface Coordinates {
@@ -53,6 +55,7 @@ export function FareCalculator() {
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
+  const [showPatchNotes, setShowPatchNotes] = useState(false) // Added state for patch notes
 
   const [isTracking, setIsTracking] = useState(false)
   const [trackedDistance, setTrackedDistance] = useState(0)
@@ -212,13 +215,23 @@ export function FareCalculator() {
             <Button variant="ghost" size="icon" onClick={() => setShowPrivacy(!showPrivacy)} className="rounded-full">
               <Shield className="w-5 h-5" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPatchNotes(!showPatchNotes)}
+              className="rounded-full"
+            >
+              <FileText className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
-        {showPrivacy ? (
+        {showPatchNotes ? (
+          <PatchNotes onClose={() => setShowPatchNotes(false)} />
+        ) : showPrivacy ? (
           <PrivacyPolicy onClose={() => setShowPrivacy(false)} />
         ) : showHistory ? (
           <TripHistoryComponent onClose={() => setShowHistory(false)} />
@@ -419,7 +432,6 @@ export function FareCalculator() {
               size="sm"
               className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors bg-transparent"
               onClick={() => {
-                // You can replace this with your actual donation link
                 window.open("https://www.paypal.com/donate", "_blank")
               }}
             >
@@ -427,7 +439,7 @@ export function FareCalculator() {
               Donate
             </Button>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-4 mb-2">
             <Button
               variant="link"
               size="sm"
@@ -436,6 +448,16 @@ export function FareCalculator() {
             >
               <Shield className="w-3 h-3 mr-1" />
               Privacy Policy
+            </Button>
+            <span className="text-xs text-muted-foreground">•</span>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
+              onClick={() => setShowPatchNotes(true)}
+            >
+              <FileText className="w-3 h-3 mr-1" />
+              Patch Notes
             </Button>
           </div>
           <p className="text-center text-xs text-muted-foreground">Tap the settings icon to customize fare rates</p>
