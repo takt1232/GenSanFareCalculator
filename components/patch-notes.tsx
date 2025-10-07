@@ -12,6 +12,14 @@ interface PatchNotesProps {
 export function PatchNotes({ onClose }: PatchNotesProps) {
   const versions = [
     {
+      version: "1.9.0",
+      date: "2025-02-10",
+      changes: [
+        "Improved GPS coordinate management for more reliable tracking",
+        "Kept route map, trip saving, and reset flows synchronized with tracked points",
+      ],
+    },
+    {
       version: "1.8.0",
       date: "2025-02-10",
       changes: [
