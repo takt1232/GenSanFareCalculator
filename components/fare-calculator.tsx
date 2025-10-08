@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,6 +63,13 @@ export function FareCalculator() {
   const [coordinates, setCoordinates] = useState<Coordinates[]>([])
   const watchIdRef = useRef<number | null>(null)
 
+  const formattedTrackedDistance = useMemo(() => {
+    if (trackedDistance < 1) {
+      return `${Math.round(trackedDistance * 1000)} m`
+    }
+    return `${trackedDistance.toFixed(2)} km`
+  }, [trackedDistance])
+
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {
@@ -95,8 +102,8 @@ export function FareCalculator() {
             const lastCoord = prev[prev.length - 1]
             const distanceIncrement = calculateDistance(lastCoord, newCoord)
 
-            // Only add distance if movement is significant (more than 10 meters)
-            if (distanceIncrement > 0.01) {
+            // Only add distance if movement is significant (more than ~5 meters)
+            if (distanceIncrement > 0.005) {
               setTrackedDistance((prevDistance) => prevDistance + distanceIncrement)
             }
           }
@@ -295,7 +302,7 @@ export function FareCalculator() {
                   <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground mb-1">Distance Tracked</p>
-                      <p className="text-3xl font-bold text-foreground">{trackedDistance.toFixed(2)} km</p>
+                      <p className="text-3xl font-bold text-foreground">{formattedTrackedDistance}</p>
                     </div>
                   </div>
                 )}
