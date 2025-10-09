@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { MapPin } from "lucide-react"
+import "leaflet/dist/leaflet.css"
 
 interface Coordinates {
   latitude: number
@@ -133,6 +134,10 @@ export function RouteMap({ coordinates, isTracking }: RouteMapProps) {
       // Fit map to show entire route
       const bounds = L.latLngBounds(latLngs)
       map.fitBounds(bounds, { padding: [50, 50] })
+      // Ensure map tiles render correctly after layout changes
+      setTimeout(() => {
+        map.invalidateSize()
+      }, 0)
     })
   }, [coordinates, isTracking])
 
