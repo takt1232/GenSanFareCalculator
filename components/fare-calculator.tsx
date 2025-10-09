@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -60,8 +60,15 @@ export function FareCalculator() {
   const [isTracking, setIsTracking] = useState(false)
   const [trackedDistance, setTrackedDistance] = useState(0)
   const [gpsError, setGpsError] = useState<string | null>(null)
+  const [coordinates, setCoordinates] = useState<Coordinates[]>([])
   const watchIdRef = useRef<number | null>(null)
-  const coordinatesRef = useRef<Coordinates[]>([])
+
+  const formattedTrackedDistance = useMemo(() => {
+    if (trackedDistance < 1) {
+      return `${Math.round(trackedDistance * 1000)} m`
+    }
+    return `${trackedDistance.toFixed(2)} km`
+  }, [trackedDistance])
 
   useEffect(() => {
     return () => {
@@ -79,7 +86,7 @@ export function FareCalculator() {
 
     setGpsError(null)
     setTrackedDistance(0)
-    coordinatesRef.current = []
+    setCoordinates([])
     setIsTracking(true)
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -90,17 +97,19 @@ export function FareCalculator() {
           timestamp: position.timestamp,
         }
 
-        if (coordinatesRef.current.length > 0) {
-          const lastCoord = coordinatesRef.current[coordinatesRef.current.length - 1]
-          const distanceIncrement = calculateDistance(lastCoord, newCoord)
+        setCoordinates((prev) => {
+          if (prev.length > 0) {
+            const lastCoord = prev[prev.length - 1]
+            const distanceIncrement = calculateDistance(lastCoord, newCoord)
 
-          // Only add distance if movement is significant (more than 10 meters)
-          if (distanceIncrement > 0.01) {
-            setTrackedDistance((prev) => prev + distanceIncrement)
+            // Only add distance if movement is significant (more than ~5 meters)
+            if (distanceIncrement > 0.005) {
+              setTrackedDistance((prevDistance) => prevDistance + distanceIncrement)
+            }
           }
-        }
 
-        coordinatesRef.current.push(newCoord)
+          return [...prev, newCoord]
+        })
       },
       (error) => {
         console.error("[v0] GPS error:", error)
@@ -146,7 +155,7 @@ export function FareCalculator() {
     setDistance("")
     setFare(null)
     setTrackedDistance(0)
-    coordinatesRef.current = []
+    setCoordinates([])
   }
 
   const saveTrip = async () => {
@@ -155,7 +164,7 @@ export function FareCalculator() {
     const distanceNum = Number.parseFloat(distance)
 
     try {
-      if (coordinatesRef.current.length > 0) {
+      if (coordinates.length > 0) {
         // GPS tracked trip
         await saveTripToHistory({
           type: "gps",
@@ -163,14 +172,14 @@ export function FareCalculator() {
           fare: fare,
           currency: currency,
           startPoint: {
-            latitude: coordinatesRef.current[0].latitude,
-            longitude: coordinatesRef.current[0].longitude,
+            latitude: coordinates[0].latitude,
+            longitude: coordinates[0].longitude,
           },
           endPoint: {
-            latitude: coordinatesRef.current[coordinatesRef.current.length - 1].latitude,
-            longitude: coordinatesRef.current[coordinatesRef.current.length - 1].longitude,
+            latitude: coordinates[coordinates.length - 1].latitude,
+            longitude: coordinates[coordinates.length - 1].longitude,
           },
-          route: coordinatesRef.current.map((coord) => ({
+          route: coordinates.map((coord) => ({
             latitude: coord.latitude,
             longitude: coord.longitude,
             timestamp: coord.timestamp,
@@ -265,9 +274,9 @@ export function FareCalculator() {
             </Card>
 
             {/* Map Visualization */}
-            {(isTracking || coordinatesRef.current.length > 0) && (
+            {(isTracking || coordinates.length > 0) && (
               <Card className="p-0 overflow-hidden">
-                <RouteMap coordinates={coordinatesRef.current} isTracking={isTracking} />
+                <RouteMap coordinates={coordinates} isTracking={isTracking} />
               </Card>
             )}
 
@@ -293,7 +302,7 @@ export function FareCalculator() {
                   <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground mb-1">Distance Tracked</p>
-                      <p className="text-3xl font-bold text-foreground">{trackedDistance.toFixed(2)} km</p>
+                      <p className="text-3xl font-bold text-foreground">{formattedTrackedDistance}</p>
                     </div>
                   </div>
                 )}
