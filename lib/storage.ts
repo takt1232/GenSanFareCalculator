@@ -1,4 +1,16 @@
-import { createClient } from "@/lib/supabase/client"
+import { createClient as createSupabaseClient } from "./supabase/client"
+
+type SupabaseClientFactory = () => ReturnType<typeof createSupabaseClient>
+
+let createClientFactory: SupabaseClientFactory = createSupabaseClient
+
+export function __setSupabaseClientFactory(factory: () => unknown): void {
+  createClientFactory = factory as SupabaseClientFactory
+}
+
+export function __resetSupabaseClientFactory(): void {
+  createClientFactory = createSupabaseClient
+}
 
 export interface TripHistory {
   id: string
@@ -43,7 +55,7 @@ export function getDeviceId(): string {
 
 async function syncTripToCloud(trip: TripHistory): Promise<void> {
   try {
-    const supabase = createClient()
+    const supabase = createClientFactory()
 
     const { error } = await supabase.from("trips").insert({
       id: trip.id,
@@ -57,7 +69,7 @@ async function syncTripToCloud(trip: TripHistory): Promise<void> {
       start_lng: trip.startPoint?.longitude,
       end_lat: trip.endPoint?.latitude,
       end_lng: trip.endPoint?.longitude,
-      route: trip.route ? JSON.stringify(trip.route) : null,
+      route: trip.route ?? null,
     })
 
     if (error) {
@@ -68,9 +80,26 @@ async function syncTripToCloud(trip: TripHistory): Promise<void> {
   }
 }
 
+function parseRouteValue(route: unknown): TripHistory["route"] | undefined {
+  if (Array.isArray(route)) {
+    return route as TripHistory["route"]
+  }
+
+  if (typeof route === "string") {
+    try {
+      const parsed = JSON.parse(route)
+      return Array.isArray(parsed) ? (parsed as TripHistory["route"]) : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  return undefined
+}
+
 async function fetchTripsFromCloud(deviceId: string): Promise<TripHistory[]> {
   try {
-    const supabase = createClient()
+    const supabase = createClientFactory()
 
     const { data, error } = await supabase
       .from("trips")
@@ -105,7 +134,7 @@ async function fetchTripsFromCloud(deviceId: string): Promise<TripHistory[]> {
               longitude: Number(trip.end_lng),
             }
           : undefined,
-      route: trip.route ? JSON.parse(trip.route) : undefined,
+      route: parseRouteValue(trip.route),
     }))
   } catch (error) {
     console.error("[v0] Error fetching trips from cloud:", error)
@@ -115,7 +144,7 @@ async function fetchTripsFromCloud(deviceId: string): Promise<TripHistory[]> {
 
 async function deleteTripFromCloud(tripId: string): Promise<void> {
   try {
-    const supabase = createClient()
+    const supabase = createClientFactory()
 
     const { error } = await supabase.from("trips").delete().eq("id", tripId)
 
@@ -129,7 +158,7 @@ async function deleteTripFromCloud(tripId: string): Promise<void> {
 
 async function clearTripsFromCloud(deviceId: string): Promise<void> {
   try {
-    const supabase = createClient()
+    const supabase = createClientFactory()
 
     const { error } = await supabase.from("trips").delete().eq("device_id", deviceId)
 

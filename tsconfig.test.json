@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".test-dist",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2019",
+    "declaration": false,
+    "emitDeclarationOnly": false
+  },
+  "include": ["lib/storage.ts", "lib/storage.test.ts", "lib/supabase/**/*.ts"]
+}
